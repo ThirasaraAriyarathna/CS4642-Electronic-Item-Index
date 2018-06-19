@@ -18,7 +18,7 @@ class ElectronicItemsSpider(scrapy.Spider):
         def extract_with_css(query):
             element = response.css(query).extract_first()
             if element is not None:
-                return response.css(query).extract_first().strip()
+                return element.strip()
             else:
                 return None
 
@@ -33,16 +33,30 @@ class ElectronicItemsSpider(scrapy.Spider):
             arr = response.css(query).extract()
             for i in arr:
                 if key in i:
-                    return [i.strip()]
-            return []
+                    return i.strip()
+            return 'Not ' + key
+
+        def extract_lists_specific_pair(query, key):
+            arr = response.css(query).extract()
+            if arr is not None:
+                for i in range(0, len(arr)):
+                    if key in arr[i]:
+                        return arr[i + 1].strip()
+                return "Not Applicable"
+            else:
+                return "Not Applicable"
 
         yield {
             'product_name': extract_with_css('div.product-name h1::text'),
             'category': " ".join(extract_with_css('div.category-products div.block-title span::text').split()[2:]),
             'price': extract_with_css('div.price-box span.regular-price span.price::text'),
             'status': extract_with_css('p.availability span::text'),
+            'warranty_period': extract_lists_specific_pair('div.box-additional ul.data-table li div::text', "Warranty Period"),
+            'brand': extract_lists_specific_pair('div.box-additional ul.data-table li div::text', "Brand"),
+            'type': extract_lists_specific_pair('div.box-additional ul.data-table li div::text', "Type"),
+            'related_items': extract_lists('div.category-products div.block-content ul.products-grid li.item h2.product-name a::text'),
             'short_description': extract_lists('div.short-description div.std ul li::text'),
-            'warranty_period': extract_lists('div.short-description div.std p span strong::text') + extract_lists_specific('div.custom-elements ul.basic-list li::text', "Warranty"),
+            'cash_on_dilivery': extract_lists_specific('div.custom-elements ul.basic-list li::text', 'Eligible for Cash on Delivery'),
         }
 
 
